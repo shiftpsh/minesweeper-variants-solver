@@ -7,6 +7,26 @@ const CROP_BOTTOM = 0.05;
 const CROP_LEFT = 0.28;
 const CROP_RIGHT = 0.28;
 
+const CELL_SIZE_FACTOR = 0.06;
+
+const reduceCandidates = (candidates: number[], estimatedCellSize: number) => {
+  const reducedCandidates: number[] = [];
+  for (let i = 0; i < candidates.length; i++) {
+    const edges: number[] = [];
+    for (let j = i; j < candidates.length; j++) {
+      if (candidates[j] - candidates[i] > estimatedCellSize) break;
+      edges.push(candidates[j]);
+    }
+    if (edges.length) {
+      reducedCandidates.push(
+        Math.floor(edges.reduce((a, b) => a + b) / edges.length)
+      );
+      i += edges.length;
+    }
+  }
+  return reducedCandidates;
+};
+
 export const cropAndDetectEdges = ({
   src,
   width: srcWidth,
@@ -47,19 +67,14 @@ export const cropAndDetectEdges = ({
       }
       const isDifferent = mx > 10;
       if (isDifferent) {
-        newImage[dstIndex] = 255;
-        newImage[dstIndex + 1] = 255;
-        newImage[dstIndex + 2] = 255;
-        newImage[dstIndex + 3] = 255;
-
         diffsX[dstI]++;
         diffsY[dstJ]++;
-      } else {
-        newImage[dstIndex] = 0;
-        newImage[dstIndex + 1] = 0;
-        newImage[dstIndex + 2] = 0;
-        newImage[dstIndex + 3] = 255;
       }
+
+      newImage[dstIndex] = src[srcIndex];
+      newImage[dstIndex + 1] = src[srcIndex + 1];
+      newImage[dstIndex + 2] = src[srcIndex + 2];
+      newImage[dstIndex + 3] = src[srcIndex + 3];
     }
   }
 
@@ -88,31 +103,21 @@ export const cropAndDetectEdges = ({
   // and that the edge candidates are at most 1 cell apart.
 
   // For safety measures, use 6% instead of 8%.
-  const ESTIMATED_CELL_SIZE = Math.min(dstHeight, dstWidth) * 0.06;
-
-  const reducedCandidatesX: number[] = [];
-  let lastEdgeX = -1;
-  for (const edge of edgeCandidatesX) {
-    if (lastEdgeX === -1 || edge - lastEdgeX > ESTIMATED_CELL_SIZE) {
-      reducedCandidatesX.push(edge);
-      lastEdgeX = edge;
-    }
-  }
-
-  const reducedCandidatesY: number[] = [];
-  let lastEdgeY = -1;
-  for (const edge of edgeCandidatesY) {
-    if (lastEdgeY === -1 || edge - lastEdgeY > ESTIMATED_CELL_SIZE) {
-      reducedCandidatesY.push(edge);
-      lastEdgeY = edge;
-    }
-  }
+  const estimatedCellSize = Math.min(dstHeight, dstWidth) * CELL_SIZE_FACTOR;
+  const reducedCandidatesX = reduceCandidates(
+    edgeCandidatesX,
+    estimatedCellSize
+  );
+  const reducedCandidatesY = reduceCandidates(
+    edgeCandidatesY,
+    estimatedCellSize
+  );
 
   // None found?
   if (reducedCandidatesX.length === 0 || reducedCandidatesY.length === 0) {
     return {
-      edgesX: [],
-      edgesY: [],
+      dstEdgesX: [],
+      dstEdgesY: [],
       dstWidth,
       dstHeight,
       debugImage: newImage,
@@ -143,8 +148,8 @@ export const cropAndDetectEdges = ({
 
   if (yBestStart === -1) {
     return {
-      edgesX: [],
-      edgesY: [],
+      dstEdgesX: [],
+      dstEdgesY: [],
       dstWidth,
       dstHeight,
       debugImage: newImage,
@@ -154,13 +159,13 @@ export const cropAndDetectEdges = ({
     };
   }
 
-  const edgesX = reducedCandidatesX;
-  const edgesY = reducedCandidatesY.slice(
+  const dstEdgesX = reducedCandidatesX;
+  const dstEdgesY = reducedCandidatesY.slice(
     yBestStart,
     yBestStart + cellCount + 1
   );
 
-  for (const edge of edgesX) {
+  for (const edge of dstEdgesX) {
     for (let j = 0; j < dstHeight; j++) {
       const index = edge * 4 + j * 4 * dstWidth;
       newImage[index] = 255;
@@ -169,7 +174,7 @@ export const cropAndDetectEdges = ({
       newImage[index + 3] = 255;
     }
   }
-  for (const edge of edgesY) {
+  for (const edge of dstEdgesY) {
     for (let i = 0; i < dstWidth; i++) {
       const index = i * 4 + edge * 4 * dstWidth;
       newImage[index] = 255;
@@ -180,8 +185,8 @@ export const cropAndDetectEdges = ({
   }
 
   return {
-    edgesX,
-    edgesY,
+    dstEdgesX,
+    dstEdgesY,
     dstWidth,
     dstHeight,
     debugImage: newImage,

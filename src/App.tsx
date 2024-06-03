@@ -2,6 +2,7 @@ import styled from "@emotion/styled";
 import { useEffect, useRef } from "react";
 import { useScreenRecord } from "./utils/useScreenRecording";
 import { cropAndDetectEdges } from "./utils/image/cropAndDetectEdges";
+import { detectFeatures } from "./utils/image/detectFeatures";
 
 const SplitCanvasRow = styled.div`
   width: 100%;
@@ -44,18 +45,40 @@ function App() {
       const srcWidth = canvasRef.current.width;
       const srcHeight = canvasRef.current.height;
 
-      const { edgesX, edgesY, dstWidth, dstHeight, debugImage } =
-        cropAndDetectEdges({
-          src: canvasImage.data,
-          width: srcWidth,
-          height: srcHeight,
-        });
+      const {
+        dstEdgesX,
+        dstEdgesY,
+        dstWidth: edgeDetectionWidth,
+        dstHeight: edgeDetectionHeight,
+        debugImage: edgeDetectionImage,
+      } = cropAndDetectEdges({
+        src: canvasImage.data,
+        width: srcWidth,
+        height: srcHeight,
+      });
+
+      const {
+        features,
+        dstWidth,
+        dstHeight,
+        debugImage: newImage,
+      } = detectFeatures({
+        src: edgeDetectionImage,
+        width: edgeDetectionWidth,
+        height: edgeDetectionHeight,
+        edgesX: dstEdgesX,
+        edgesY: dstEdgesY,
+      });
 
       canvasDebugRef.current.width = dstWidth;
       canvasDebugRef.current.height = dstHeight;
       canvasDebugRef.current
         .getContext("2d")
-        ?.putImageData(new ImageData(debugImage, dstWidth, dstHeight), 0, 0);
+        ?.putImageData(
+          new ImageData(new Uint8ClampedArray(newImage), dstWidth, dstHeight),
+          0,
+          0
+        );
 
       canvasRef.current.style.aspectRatio = `${srcWidth}/${srcHeight}`;
       canvasDebugRef.current.style.aspectRatio = `${dstWidth}/${dstHeight}`;
