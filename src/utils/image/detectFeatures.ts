@@ -1,3 +1,5 @@
+import { classify } from "./classify";
+
 export type Feature = string | null;
 export type FeatureMatrix = Feature[][];
 
@@ -20,7 +22,6 @@ const colorDistance = (
 export const detectFeatures = ({
   src,
   width,
-  height,
   edgesX,
   edgesY,
 }: {
@@ -105,16 +106,29 @@ export const detectFeatures = ({
             newImage[dstIndex + 1] = 0;
             newImage[dstIndex + 2] = 0;
             newImage[dstIndex + 3] = 255;
-            features[i][j] = "object";
           } else {
             newImage[dstIndex] = 200;
             newImage[dstIndex + 1] = 200;
             newImage[dstIndex + 2] = 200;
-            newImage[dstIndex + 3] = 255;
-            features[i][j] = "background";
+            newImage[dstIndex + 3] = 200;
           }
         }
       }
+
+      // Processing complete - classify
+      const classification = classify({
+        src: newImage,
+        srcHeight: ySize,
+        srcWidth: xSize,
+        crop: {
+          x1: x1 + edgePixels - xOffset,
+          x2: x2 - edgePixels - xOffset,
+          y1: y1 + edgePixels - yOffset,
+          y2: y2 - edgePixels - yOffset,
+        },
+      });
+
+      features[j][i] = classification;
     }
   }
 

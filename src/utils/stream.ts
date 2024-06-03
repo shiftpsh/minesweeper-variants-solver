@@ -114,8 +114,14 @@ export default class StreamDisplay {
     const { streamHeight, streamWidth, video } = this;
     const propCanvasContext = propCanvas.getContext("2d");
     if (propCanvasContext !== null) {
-      propCanvas.width = streamWidth / 2;
-      propCanvas.height = streamHeight / 2;
+      let scale = 1;
+      let originalMaxOfWidthAndHeight = Math.max(streamWidth, streamHeight);
+      while (originalMaxOfWidthAndHeight > 2400) {
+        scale *= 2;
+        originalMaxOfWidthAndHeight /= 2;
+      }
+      propCanvas.width = streamWidth / scale;
+      propCanvas.height = streamHeight / scale;
       propCanvasContext.drawImage(
         video,
         0,

@@ -1,8 +1,8 @@
 import styled from "@emotion/styled";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useScreenRecord } from "./utils/useScreenRecording";
 import { cropAndDetectEdges } from "./utils/image/cropAndDetectEdges";
-import { detectFeatures } from "./utils/image/detectFeatures";
+import { FeatureMatrix, detectFeatures } from "./utils/image/detectFeatures";
 
 const SplitCanvasRow = styled.div`
   width: 100%;
@@ -20,6 +20,8 @@ function App() {
   const screen = useScreenRecord();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasDebugRef = useRef<HTMLCanvasElement>(null);
+
+  const [board, setBoard] = useState<FeatureMatrix | null>(null);
 
   useEffect(() => {
     if (!screen.isRecording) return undefined;
@@ -70,6 +72,8 @@ function App() {
         edgesY: dstEdgesY,
       });
 
+      setBoard(features);
+
       canvasDebugRef.current.width = dstWidth;
       canvasDebugRef.current.height = dstHeight;
       canvasDebugRef.current
@@ -93,6 +97,23 @@ function App() {
         <Screen ref={canvasRef} />
         <Screen ref={canvasDebugRef} />
       </SplitCanvasRow>
+      {board ? (
+        <>
+          <table>
+            <tbody>
+              {board.map((row, i) => (
+                <tr key={i}>
+                  {row.map((cell, j) => (
+                    <td key={j}>{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : (
+        <>No board found.</>
+      )}
       <h1>Vite + React</h1>
       <div className="card">
         <p>
