@@ -19,11 +19,14 @@ def transform(image_name):
 
     ret = []
     for i in range(image.width):
-        for j in range(image.height):
-            pixel = image.getpixel((i, j))
-            ret.append(1 if pixel[0] < 128 else 0)
+        for j in range(0, image.height, 8):
+            bitmask = 0
+            for k in range(8):
+                pixel = image.getpixel((i, j + k))
+                bitmask |= (1 << k) if pixel[0] < 128 else 0
+            ret.append(bitmask)
 
-    script.write(f"const data = {ret};\nconst tile = {'{'} data, name: '{image_name_replaced}' {'};'}\nexport default tile;")
+    script.write(f"const data = {ret};\nconst tile = {'{'} data: new Uint8ClampedArray(data), name: '{image_name_replaced}' {'};'}\nexport default tile;")
     script.close()
 
 

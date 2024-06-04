@@ -31,13 +31,8 @@ import t1_1_3 from "./s1_1_3";
 import t1_2_2 from "./s1_2_2";
 import t1_1_1_1 from "./s1_1_1_1";
 
-const tInverseNull = {
-  ...tnull,
-  data: tnull.data.map((x) => (x === 0 ? 1 : 0)),
-};
-
 interface Tile {
-  data: number[];
+  data: Uint8ClampedArray;
   name: string;
 }
 
@@ -60,7 +55,6 @@ const tiles: Tile[] = [
   tflag,
   thidden,
   tnull,
-  tInverseNull,
   t1_1,
   t1_2,
   t1_3,
